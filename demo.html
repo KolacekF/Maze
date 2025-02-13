@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Maze DEMOtitle</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+        #maze table{
+            border-collapse: collapse;
+            font-family: monospace;
+            display: block;
+        }
+        #maze td{
+            padding: 0; 
+            margin: 0;
+        }
+        main{
+            display: flex;
+            flex-direction: column;
+            /*align-items: center;*/ /*doesnt work if flex item is overflowing - left part is unaccesible*/
+        }
+        main > *{
+            margin: auto; /*fix for the unaccesibles flex item*/
+        }
+        #buttons{
+            display: flex;
+        }
+        #buttons button{
+            padding: 0.5em 1em;
+            margin: 1em;
+            color: #000;
+            background-color: #c7c7c7;
+            border: 3px solid #a7a7a7;
+            box-shadow: 1px 1px 0px 0px #a7a7a7, 2px 2px 0px 0px #a7a7a7, 3px 3px 0px #a7a7a7;
+            cursor: pointer;
+            text-decoration: none;
+            transition: 0.5s all ease;
+        }
+        #buttons button:active{
+            box-shadow: 0px 0px 0px 0px;
+            position: relative;
+            top: 3px;
+            left: 3px;
+        }
+        #buttons button.blocked{
+            color: #474646;
+            opacity: 70%;
+            background-color: #e3e3e3;
+            border: 3px solid #cfcece;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        #buttons button.fetching{
+            animation: load 1s infinite linear;
+        }
+
+        @keyframes load {
+            0% {
+                transform: scale(1);
+            } 50% {
+                transform: scale(0.8);
+            } 100% {
+                transform: scale(1);
+            }
+        }
+
+        @media only screen and (max-width: 600px) {
+            #buttons{
+                flex-direction: column;
+                align-items: stretch;
+                min-width: 70%;
+            }
+        }
+    </style>
+    <script>
+        var myGlobalVariable = {
+            data:{
+                fatched:[]
+            },
+            maze:{
+                current:{
+                    data:[],
+                    shown:[],
+                    size:[],
+                    interation:0,
+                    reset: () => {
+                        this.data = []; this.shown = []; this.size = []; this.interation = 0
+                    }
+                }
+            }
+        }
+
+        function getRndInteger(min, max) { //min and max (both included)
+            return Math.floor(Math.random() * (max - min + 1) ) + min;
+        }
+
+        function FetchData(){
+            for (const e of document.getElementById("buttons").children) {
+                e.classList.add("fetching");
+                e.classList.add("blocked");
+            }
+        fetch(`demo.json`)
+            .then((response) => response.json())
+            .then((json) => {myGlobalVariable.data.fetched = json.data; DataFetched()});
+        }
+
+        function DataFetched(){
+            //myGlobalVariable.data.size3x3 = myGlobalVariable.data.fetched.size3x3[getRndInteger(0, 2)]
+            //for (const i of ["size3x3", "size5x5", "size10x10"]) {
+            //    myGlobalVariable.data[i] = myGlobalVariable.data.fetched[i][getRndInteger(0, 2)]
+            //}
+
+            //document.getElementById("buttons").classList.toggle("fetching");
+            for (const e of document.getElementById("buttons").children) {
+                e.classList.remove("fetching");
+                e.classList.remove("blocked");
+            }
+        }
+        function MazeStart(){
+            for (const e of document.getElementById("buttons").children) {
+                e.classList.add("blocked");
+            }
+        }
+        function MazeDone(){
+            //alert("maze done");
+            for (const e of document.getElementById("buttons").children) {
+                e.classList.remove("blocked");
+            }
+        }
+        function Reset(){
+            myGlobalVariable.maze.current.reset();
+            document.getElementById("maze").textContent = '';
+        }
+
+        //every button calls this method, which randomly choose from fetched data random maze which id copies to myGlobalVariable.maze.current...
+        function HandleButtonClick(size){
+            Reset()
+            MazeStart()
+
+            switch(size) {
+                case "size3x3":
+                    myGlobalVariable.maze.current.data = myGlobalVariable.data.fetched.size3x3[getRndInteger(0, myGlobalVariable.data.fetched.size3x3.length - 1)];
+                    break;
+                case "size5x5":
+                    myGlobalVariable.maze.current.data = myGlobalVariable.data.fetched.size5x5[getRndInteger(0, myGlobalVariable.data.fetched.size5x5.length - 1)];
+                    break;
+                case "size10x10":
+                    myGlobalVariable.maze.current.data = myGlobalVariable.data.fetched.size10x10[getRndInteger(0, myGlobalVariable.data.fetched.size10x10.length - 1)];
+                    break;
+                default:
+                    throw "Error on switch statement in maze size"
+            }
+            myGlobalVariable.maze.current.shown = JSON.parse(JSON.stringify(myGlobalVariable.maze.current.data));
+            for (const sublist of myGlobalVariable.maze.current.shown) {
+                sublist.fill(false);
+            }
+            myGlobalVariable.maze.current.size = [myGlobalVariable.maze.current.data[0].length, myGlobalVariable.maze.current.data.length]; //[x, y]
+            myGlobalVariable.maze.current.interation = 0;
+
+            EmptyMaze(myGlobalVariable.maze.current.data);
+            NextChar();
+        }
+
+        //Creates HTML DOM structure of empty table based on given data, which is expected array with subarrays
+        function EmptyMaze(data){
+            let wrapper = document.getElementById("maze");
+            let table = document.createElement("table");
+
+            for (const line of data) {
+                let row = document.createElement("tr");
+                for (const char of line) {
+                    let data = document.createElement("td");
+                    data.innerHTML = "&nbsp;";
+                    row.appendChild(data);
+                }
+                table.appendChild(row);
+            }
+            wrapper.appendChild(table);
+        }
+
+        //when called, next char of maze is shown, then method calls itself with setTimeout() until based of myGlobalVariable.maze.current.iteration
+        function NextChar(){
+            let rndX = 0;
+            let rndY = 0;
+            function inner(){ //choose random char in array of arrays, if it is already shown, choose other
+                rndX = getRndInteger(0, myGlobalVariable.maze.current.size[0] - 1);
+                rndY = getRndInteger(0, myGlobalVariable.maze.current.size[1] - 1);
+
+                if (myGlobalVariable.maze.current.shown[rndY][rndX]) { //if char is shown
+                    return inner();
+                } else { //if char is not shown
+                    myGlobalVariable.maze.current.shown[rndY][rndX] = true;
+                    RefreshTable([[rndX],[rndY]]);
+                }
+            }
+            
+            if (myGlobalVariable.maze.current.size[0] * myGlobalVariable.maze.current.size[1] <= myGlobalVariable.maze.current.interation) {
+                return MazeDone()
+            } else {
+                inner()
+            
+                myGlobalVariable.maze.current.interation += 1;
+                setTimeout(() => {NextChar()}, 3);
+            }
+        }
+
+        //changes HTML DOM element on given position of array of arrays
+        function RefreshTable(position){
+            let table = document.getElementById("maze").children[0];
+
+            table.children[position[1]].children[position[0]].innerHTML = myGlobalVariable.maze.current.data[position[1]][position[0]];
+        }
+
+
+
+    </script>
+</head>
+<body onload="FetchData()">
+    <header></header>
+    <main>
+        <div id="maze">
+            <div></div> <!--PLACEHOLDER - will be deleted once <table> is created-->
+        </div>
+        <div id="buttons">
+            <button type="button" onclick="HandleButtonClick(`size3x3`)">3x3</button>
+            <button type="button" onclick="HandleButtonClick(`size5x5`)">5x5</button>
+            <button type="button" onclick="HandleButtonClick(`size10x10`)">10x10</button>
+        </div>
+    </main>
+    <footer></footer>
+</body>
+</html>

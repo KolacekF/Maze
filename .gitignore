@@ -4,3 +4,6 @@
 #ignore exported data
 export.json
 export.txt
+
+#ignore old files
+demo_OLD??.json

@@ -147,6 +147,12 @@
                 case "size10x10":
                     myGlobalVariable.maze.current.data = myGlobalVariable.data.fetched.size10x10[getRndInteger(0, myGlobalVariable.data.fetched.size10x10.length - 1)];
                     break;
+                case "size20x10":
+                    myGlobalVariable.maze.current.data = myGlobalVariable.data.fetched.size20x10[getRndInteger(0, myGlobalVariable.data.fetched.size20x10.length - 1)];
+                    break;
+                case "size30x20":
+                    myGlobalVariable.maze.current.data = myGlobalVariable.data.fetched.size30x20[getRndInteger(0, myGlobalVariable.data.fetched.size30x20.length - 1)];
+                    break;
                 default:
                     throw "Error on switch statement in maze size"
             }
@@ -225,6 +231,8 @@
             <button type="button" onclick="HandleButtonClick(`size3x3`)">3x3</button>
             <button type="button" onclick="HandleButtonClick(`size5x5`)">5x5</button>
             <button type="button" onclick="HandleButtonClick(`size10x10`)">10x10</button>
+            <button type="button" onclick="HandleButtonClick(`size20x10`)">20x10</button>
+            <button type="button" onclick="HandleButtonClick(`size30x20`)">30x20</button>
         </div>
     </main>
     <footer></footer>

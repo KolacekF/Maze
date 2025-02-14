@@ -7,6 +7,7 @@
 
 ![screenshot of maze](examples/example_1.png)
 ## How to use
+- max dimensions should be around 30x30. If `x * y > 1000`, then max recursion Error can occur
 ### ONE maze
 1. You can change parameters at the end of `main.py`
 ```python
